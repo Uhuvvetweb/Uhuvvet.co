@@ -1,0 +1,263 @@
+// This is your Prisma schema file for the backend
+// Place this in your Express.js backend project
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  username      String    @unique
+  email         String    @unique
+  displayName   String
+  password      String
+  avatar        String?
+  bio           String?
+  isVerified    Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  posts         Post[]
+  comments      Comment[]
+  likes         Like[]
+  savedPosts    SavedPost[]
+  notifications Notification[]
+  
+  followers     Follow[]  @relation("Following")
+  following     Follow[]  @relation("Followers")
+  
+  communityMemberships CommunityMember[]
+  createdCommunities   Community[]       @relation("CommunityCreator")
+  
+  departmentMemberships DepartmentMember[]
+  
+  @@index([username])
+  @@index([email])
+}
+
+model Post {
+  id           String    @id @default(cuid())
+  content      String    @db.Text
+  authorId     String
+  isAnonymous  Boolean   @default(false)
+  category     String?
+  communityId  String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  
+  author       User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  community    Community? @relation(fields: [communityId], references: [id])
+  
+  comments     Comment[]
+  likes        Like[]
+  savedBy      SavedPost[]
+  tags         PostTag[]
+  images       PostImage[]
+  
+  @@index([authorId])
+  @@index([communityId])
+  @@index([createdAt])
+}
+
+model Comment {
+  id          String    @id @default(cuid())
+  content     String    @db.Text
+  postId      String
+  authorId    String
+  isAnonymous Boolean   @default(false)
+  parentId    String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  post        Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author      User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  parent      Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
+  replies     Comment[] @relation("CommentReplies")
+  
+  likes       CommentLike[]
+  
+  @@index([postId])
+  @@index([authorId])
+  @@index([parentId])
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  createdAt DateTime @default(now())
+  
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([postId, userId])
+  @@index([postId])
+  @@index([userId])
+}
+
+model CommentLike {
+  id        String   @id @default(cuid())
+  commentId String
+  userId    String
+  createdAt DateTime @default(now())
+  
+  comment   Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  
+  @@unique([commentId, userId])
+}
+
+model SavedPost {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  createdAt DateTime @default(now())
+  
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([postId, userId])
+  @@index([userId])
+}
+
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+  
+  follower    User     @relation("Followers", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User     @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+  
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+}
+
+model Community {
+  id          String    @id @default(cuid())
+  name        String
+  description String    @db.Text
+  icon        String?
+  iconColor   String?
+  banner      String?
+  category    String
+  isPrivate   Boolean   @default(false)
+  creatorId   String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  creator     User      @relation("CommunityCreator", fields: [creatorId], references: [id])
+  members     CommunityMember[]
+  posts       Post[]
+  
+  @@index([creatorId])
+}
+
+model CommunityMember {
+  id          String    @id @default(cuid())
+  communityId String
+  userId      String
+  role        String    @default("member")
+  joinedAt    DateTime  @default(now())
+  
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([communityId, userId])
+  @@index([communityId])
+  @@index([userId])
+}
+
+model WikiArticle {
+  id          String    @id @default(cuid())
+  title       String
+  content     String    @db.Text
+  summary     String
+  category    String
+  authorId    String
+  viewsCount  Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  tags        WikiTag[]
+  
+  @@index([category])
+  @@index([authorId])
+}
+
+model WikiTag {
+  id        String      @id @default(cuid())
+  name      String      @unique
+  articles  WikiArticle[]
+}
+
+model PostTag {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  posts     Post[]
+}
+
+model PostImage {
+  id        String   @id @default(cuid())
+  postId    String
+  url       String
+  order     Int      @default(0)
+  
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  
+  @@index([postId])
+}
+
+model Department {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  description String    @db.Text
+  icon        String?
+  iconColor   String?
+  category    String
+  headId      String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  members     DepartmentMember[]
+  
+  @@index([category])
+}
+
+model DepartmentMember {
+  id           String     @id @default(cuid())
+  departmentId String
+  userId       String
+  role         String     @default("member")
+  joinedAt     DateTime   @default(now())
+  
+  department   Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([departmentId, userId])
+  @@index([departmentId])
+  @@index([userId])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  title     String
+  message   String   @db.Text
+  isRead    Boolean  @default(false)
+  actionUrl String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+}

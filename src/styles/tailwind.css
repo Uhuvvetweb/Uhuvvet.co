@@ -1,0 +1,40 @@
+/* Tailwind CSS v4 Configuration */
+@import "tailwindcss";
+@import "./theme.css";
+@import "./fonts.css";
+
+/* Theme Configuration */
+@theme {
+  /* Container */
+  --container-center: true;
+  --container-padding-2xl: 2rem;
+  --container-screen-2xl: 1400px;
+
+  /* Border Radius */
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+
+  /* Animations */
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+}
+
+/* Keyframes */
+@keyframes accordion-down {
+  from {
+    height: 0;
+  }
+  to {
+    height: var(--radix-accordion-content-height);
+  }
+}
+
+@keyframes accordion-up {
+  from {
+    height: var(--radix-accordion-content-height);
+  }
+  to {
+    height: 0;
+  }
+}
